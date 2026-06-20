@@ -1,0 +1,14 @@
+[
+  {
+    "title": "Python 入门",
+    "body": "Python 是一门解释型语言, 语法简洁易读, 适合初学者快速上手编程。"
+  },
+  {
+    "title": "数据库备份",
+    "body": "MySQL 使用 mysqldump 命令备份。PostgreSQL 使用 pg_dump, 支持并行备份。"
+  },
+  {
+    "title": "Redis 缓存",
+    "body": "Redis 是内存数据库, 常用作缓存层。支持 String、Hash、List、Set 等数据结构。"
+  }
+]

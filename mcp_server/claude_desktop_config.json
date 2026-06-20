@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "codebase-qa": {
+      "command": "python",
+      "args": ["-m", "mcp_server"],
+      "cwd": "/Users/fivesheeplive/code/pycharm/learn/hello/hello01",
+      "env": {
+        "ANTHROPIC_API_KEY": "your-api-key-here",
+        "ANTHROPIC_BASE_URL": "https://api.deepseek.com/anthropic",
+        "CHROMA_PERSIST_DIR": "./codebase_qa/chroma_db",
+        "EMBEDDING_MODEL": "BAAI/bge-m3"
+      }
+    }
+  }
+}

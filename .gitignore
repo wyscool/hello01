@@ -1,0 +1,42 @@
+# 环境变量 (API Key)
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+*.egg
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# 测试/缓存
+.pytest_cache/
+.coverage
+htmlcov/
+
+# 输出
+output/
+
+# ChromaDB (向量数据库文件)
+chroma_db/
+*.sqlite3
+*.sqlite3-wal
+*.sqlite3-shm
+
+# Mac
+.DS_Store
+
+# Claude Code 本地配置
+.claude/
+
+# 模型文件
+*.pth
+*.bin
+*.safetensors

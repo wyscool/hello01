@@ -1,0 +1,49 @@
+[build-system]
+requires = ["setuptools>=75.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "codebase-qa"
+version = "0.1.0"
+description = "AST-based Python code indexing and natural language Q&A"
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "MIT" }
+authors = [
+    { name = "fivesheeplive" },
+]
+keywords = ["code-search", "rag", "ast", "chromadb", "llm"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Code Search",
+]
+
+dependencies = [
+    "anthropic>=0.109.0",
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.49.0",
+    "python-dotenv>=1.0.0",
+    "sentence-transformers>=5.5.0",
+    "chromadb>=1.2.0",
+    "numpy>=1.26.0",
+    "click>=8.0.0",
+    "streamlit>=1.50.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.24",
+]
+
+[project.scripts]
+cqa = "codebase_qa.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["codebase_qa*", "deploy*"]
+
+[tool.pytest.ini_options]
+testpaths = ["codebase_qa/tests", "deploy/tests"]
+asyncio_mode = "auto"

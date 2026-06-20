@@ -1,0 +1,9 @@
+# DevAssistant API — 生产部署依赖
+# 安装: pip install -r deploy/requirements.txt
+
+anthropic>=0.109.0
+fastapi>=0.115.0
+uvicorn[standard]>=0.49.0
+python-dotenv>=1.0.0
+sentence-transformers>=5.5.0
+pydantic>=2.13.0

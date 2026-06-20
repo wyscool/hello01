@@ -1,0 +1,11 @@
+Python 文件读写就像读一本书
+你可以一次性读完（read）
+也可以一行一行读（readline）
+或者让 Python 帮你逐行迭代（for line in f）
+每种方式都有适合的场景
+
+记住：用 with 语句打开文件，它会在退出时自动关闭
+就像 Java 的 try-with-resources，但更简洁
+
+还要记住：始终指定 encoding="utf-8"
+这样你的代码在 Windows 和 macOS 上都能正确处理中文
