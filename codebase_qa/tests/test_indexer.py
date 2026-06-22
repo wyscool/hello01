@@ -339,3 +339,212 @@ class TestIndexDirectory:
         (src / "b.py").write_text("def bar():\n    return 2\n")
         chunks2 = indexer.index_directory(src)
         assert len(chunks2) > 0  # 新文件被检测到
+
+
+# ============================================================
+# Java 解析器测试
+# ============================================================
+
+@pytest.fixture
+def temp_java_file(tmp_path):
+    """创建临时 .java 文件用于 Java 解析测试。"""
+    src = tmp_path / "src"
+    src.mkdir()
+    file_path = src / "UserService.java"
+    file_path.write_text("""package com.example.service;
+
+import java.util.List;
+import java.util.Optional;
+
+/**
+ * Service for user operations.
+ */
+@Service
+public class UserService extends BaseService implements UserApi {
+
+    @Autowired
+    private final UserRepository userRepo;
+
+    /** Default constructor. */
+    public UserService() {
+    }
+
+    /**
+     * Find by ID.
+     * @param id the ID
+     * @return the user
+     */
+    @Override
+    public Optional<User> findById(Long id) {
+        return userRepo.findById(id);
+    }
+
+    public List<User> searchByName(String keyword) {
+        return userRepo.findByNameContaining(keyword);
+    }
+
+    private boolean isValid(String name) {
+        return name != null && !name.isEmpty();
+    }
+}
+
+public enum Status {
+    ACTIVE, INACTIVE
+}
+
+public interface UserApi {
+    Optional<User> findById(Long id);
+}
+""")
+    return file_path
+
+
+class TestJavaParser:
+    """Java 正则解析器的测试套件。"""
+
+    def test_parses_class(self, temp_java_file):
+        chunks = CodeIndexer().parse_file(temp_java_file)
+        classes = [c for c in chunks if c.type == "class"]
+        names = {c.name for c in classes}
+        assert "UserService" in names
+        assert "Status" in names
+        assert "UserApi" in names
+
+    def test_class_has_java_language(self, temp_java_file):
+        chunks = CodeIndexer().parse_file(temp_java_file)
+        for c in chunks:
+            assert c.language == "java"
+
+    def test_extracts_fields(self, temp_java_file):
+        chunks = CodeIndexer().parse_file(temp_java_file)
+        fields = [c for c in chunks if c.type == "field"]
+        names = {c.name for c in fields}
+        assert "UserService.userRepo" in names
+
+    def test_extracts_constructor(self, temp_java_file):
+        chunks = CodeIndexer().parse_file(temp_java_file)
+        methods = [c for c in chunks if c.type == "method"]
+        names = {c.name for c in methods}
+        assert "UserService.UserService" in names  # constructor
+
+    def test_extracts_methods(self, temp_java_file):
+        chunks = CodeIndexer().parse_file(temp_java_file)
+        methods = [c for c in chunks if c.type == "method"]
+        names = {c.name for c in methods}
+        assert "UserService.findById" in names
+        assert "UserService.searchByName" in names
+        assert "UserService.isValid" in names
+
+    def test_method_signature_has_annotation(self, temp_java_file):
+        chunks = CodeIndexer().parse_file(temp_java_file)
+        method = [c for c in chunks if c.name == "UserService.findById"][0]
+        assert "@Override" in method.signature
+
+    def test_field_signature_has_annotation(self, temp_java_file):
+        chunks = CodeIndexer().parse_file(temp_java_file)
+        field = [c for c in chunks if c.name == "UserService.userRepo"][0]
+        assert "@Autowired" in field.signature
+
+    def test_extracts_javadoc(self, temp_java_file):
+        chunks = CodeIndexer().parse_file(temp_java_file)
+        # class javadoc
+        cls = [c for c in chunks if c.name == "UserService"][0]
+        assert "Service for user operations" in cls.docstring
+
+    def test_extracts_method_javadoc(self, temp_java_file):
+        chunks = CodeIndexer().parse_file(temp_java_file)
+        method = [c for c in chunks if c.name == "UserService.findById"][0]
+        assert "Find by ID" in method.docstring
+
+    def test_extracts_module_level(self, temp_java_file):
+        chunks = CodeIndexer().parse_file(temp_java_file)
+        mod = [c for c in chunks if c.type == "module_level"]
+        assert len(mod) == 1
+        assert "package com.example.service" in mod[0].code_text
+        assert "import java.util.List" in mod[0].code_text
+
+    def test_line_numbers_accurate(self, temp_java_file):
+        chunks = CodeIndexer().parse_file(temp_java_file)
+        method = [c for c in chunks if c.name == "UserService.searchByName"][0]
+        assert method.start_line > 0
+        assert method.end_line >= method.start_line
+
+    def test_empty_java_file(self, tmp_path):
+        src = tmp_path / "src"
+        src.mkdir()
+        fp = src / "Empty.java"
+        fp.write_text("")
+        chunks = CodeIndexer().parse_file(fp)
+        assert chunks == [] or all(c.type == "module_level" for c in chunks)
+
+    def test_non_java_code_handled(self, tmp_path):
+        src = tmp_path / "src"
+        src.mkdir()
+        fp = src / "Broken.java"
+        fp.write_text("this is not Java code {{{")
+        chunks = CodeIndexer().parse_file(fp)
+        # 应该不崩溃，可能返回空或 module_level
+        assert isinstance(chunks, list)
+
+    def test_skip_unchanged_java(self, temp_java_file):
+        idx = CodeIndexer()
+        chunks1 = idx.parse_file(temp_java_file)
+        assert len(chunks1) > 0
+        chunks2 = idx.parse_file(temp_java_file)
+        assert chunks2 == []
+
+    def test_metadata_includes_language(self, temp_java_file):
+        idx = CodeIndexer()
+        chunks = idx.parse_file(temp_java_file)
+        for c in chunks:
+            meta = idx.chunk_to_metadata(c)
+            assert meta["language"] == "java"
+            assert "name" in meta
+            assert "type" in meta
+            assert "file_path" in meta
+
+    def test_mixed_directory_indexing(self, tmp_path):
+        src = tmp_path / "src"
+        src.mkdir()
+        (src / "app.py").write_text("def main():\n    pass\n")
+        (src / "Util.java").write_text("public class Util {\n" +
+            "    public static int add(int a, int b) {\n" +
+            "        return a + b;\n" +
+            "    }\n" +
+            "}\n")
+
+        idx = CodeIndexer()
+        chunks = idx.parse_file(src / "app.py")
+        assert any(c.language == "python" for c in chunks)
+
+        chunks = idx.parse_file(src / "Util.java")
+        java_chunks = [c for c in chunks if c.language == "java"]
+        assert len(java_chunks) >= 1
+
+    def test_walk_directory_finds_java(self, tmp_path):
+        src = tmp_path / "src"
+        src.mkdir()
+        (src / "A.py").write_text("pass")
+        (src / "B.java").write_text("class B {}")
+
+        idx = CodeIndexer()
+        files = idx.walk_directory(src)
+        names = {f.name for f in files}
+        assert "A.py" in names
+        assert "B.java" in names
+
+    def test_walk_directory_python_only(self, tmp_path):
+        src = tmp_path / "src"
+        src.mkdir()
+        (src / "A.py").write_text("pass")
+        (src / "B.java").write_text("class B {}")
+
+        idx = CodeIndexer()
+        files = idx.walk_directory(src, extensions={".py"})
+        names = {f.name for f in files}
+        assert names == {"A.py"}
+
+    def test_embed_text_includes_language(self, temp_java_file):
+        chunks = CodeIndexer().parse_file(temp_java_file)
+        for c in chunks:
+            assert "[java]" in c.embed_text

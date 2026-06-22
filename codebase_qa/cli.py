@@ -188,13 +188,14 @@ def ask(question, top_k, filter_type, no_mmr, verbose):
 @click.option("--exclude", "-e", default="tests,venv,.git,__pycache__,node_modules,build,dist",
               show_default=True, help="排除目录 (逗号分隔)")
 def index(dirs, exclude):
-    """索引一个或多个 Python 代码目录。
+    """索引一个或多个 Python / Java 代码目录。
 
-    将 .py 文件的函数/类/方法按 AST 结构分块并存入 ChromaDB。已修改的文件自动增量更新。
+    将 .py 和 .java 文件的函数/类/方法按结构分块并存入 ChromaDB。已修改的文件自动增量更新。
 
     \b
     示例:
       cqa index ./phase1
+      cqa index ./my-java-project
       cqa index ./phase1 ./deploy ./codebase_qa
       cqa index . --exclude "tests,venv"
     """
